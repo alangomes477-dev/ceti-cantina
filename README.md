@@ -1,36 +1,75 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🍎 Cantina CETI - App de Gestão Alimentar Escolar
 
-## Getting Started
+> Um Progressive Web App (PWA) desenvolvido para modernizar a gestão da cantina do CETI Mário Raulino, focando na redução de desperdício de alimentos e educação nutricional.
 
-First, run the development server:
+![Status](https://img.shields.io/badge/Status-Em_Desenvolvimento-green)
+![Stack](https://img.shields.io/badge/Tech-Next.js_14-black)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🎯 O Problema e a Solução
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+As escolas enfrentam um desafio diário: cozinhar a quantidade exata de comida.
+* **Se cozinham de menos:** Alunos ficam sem refeição.
+* **Se cozinham de mais:** Ocorre desperdício de recursos públicos e alimentos.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+O **Cantina CETI** resolve isso permitindo que os alunos confirmem antecipadamente se irão almoçar. A equipe da cozinha tem acesso a um painel em tempo real com o quantitativo exato de pratos a serem preparados.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## ✨ Funcionalidades Principais
 
-## Learn More
+### 📱 Para o Aluno (Mobile PWA)
+* **Confirmação de Presença:** Sistema simples de "Vou" ou "Não vou" almoçar.
+* **Cardápio Digital:** Visualização semanal das refeições com ícones de alergênicos (Glúten/Lactose).
+* **Educação Nutricional:** Feed de dicas de saúde com design atrativo.
+* **Instalável:** Funciona como aplicativo nativo no Android/iOS.
 
-To learn more about Next.js, take a look at the following resources:
+### 👩‍🍳 Para a Gestão (Painel Admin)
+* **Monitoramento em Tempo Real:** Contagem automática de alunos confirmados.
+* **Previsão de Demanda:** Ajuda a definir a quantidade de ingredientes do dia.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🛠️ Tecnologias Utilizadas
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+* **Frontend:** [Next.js](https://nextjs.org/) (React Framework)
+* **Estilização:** [Tailwind CSS](https://tailwindcss.com/)
+* **Ícones:** [Lucide React](https://lucide.dev/)
+* **Backend (Simulado):** Next.js API Routes (In-memory storage)
+* **Linguagem:** TypeScript
 
-## Deploy on Vercel
+## 🚀 Como Rodar o Projeto
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Pré-requisitos
+* Node.js instalado (Versão 18 ou superior)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Passo a Passo
+
+1.  **Clone o repositório (ou baixe a pasta):**
+    ```bash
+    git clone [https://seu-repositorio-aqui.git](https://seu-repositorio-aqui.git)
+    cd ceti-cantina
+    ```
+
+2.  **Instale as dependências:**
+    ```bash
+    npm install
+    ```
+
+3.  **Inicie o servidor de desenvolvimento:**
+    ```bash
+    npm run dev
+    ```
+
+4.  **Acesse no navegador:**
+    * 📱 App do Aluno: `http://localhost:3000`
+    * 📊 Painel da Cozinha: `http://localhost:3000/admin`
+
+## 📂 Estrutura do Projeto
+
+```text
+src/
+├── app/
+│   ├── admin/       # Painel da Cozinheira (Relatórios)
+│   ├── api/         # Backend e Lógica de Contagem
+│   ├── cardapio/    # Tela de Cardápio Semanal
+│   ├── dashboard/   # Tela Principal do Aluno
+│   ├── dicas/       # Feed de Nutrição
+│   └── login/       # Autenticação
+├── components/      # Componentes Reutilizáveis
+└── public/          # Ícones e Manifesto PWA
