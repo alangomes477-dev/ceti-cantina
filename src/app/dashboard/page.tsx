@@ -1,14 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation'; // Importei o router para expulsar quem não tem login
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { db } from '@/lib/firebase';
-import { ref, runTransaction, get, child, set } from 'firebase/database'; // Importei get, child e set
+// Adicionei onValue para ler o cardápio em tempo real
+import { ref, runTransaction, get, child, set, onValue } from 'firebase/database';
 
 import { 
   Bell, CalendarDays, Apple, UtensilsCrossed, 
-  CheckCircle2, XCircle, LockKeyhole
+  CheckCircle2, XCircle, LockKeyhole, Loader2
 } from 'lucide-react';
 
 export default function Dashboard() {
@@ -17,41 +18,68 @@ export default function Dashboard() {
   const [presenca, setPresenca] = useState<'sim' | 'nao' | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [nomeAluno, setNomeAluno] = useState('Aluno');
-  const [jaVotou, setJaVotou] = useState(false); // 👈 Novo estado para bloquear
+  const [jaVotou, setJaVotou] = useState(false);
+  
+  // Novo estado para guardar o prato do dia
+  const [pratoDoDia, setPratoDoDia] = useState('Carregando cardápio...');
+  const [acompanhamento, setAcompanhamento] = useState('');
 
   const dataIso = new Date().toISOString().split('T')[0]; 
   const dataLegivel = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'short' });
 
   useEffect(() => {
-    // 1. Recupera dados do Login
+    // 1. Verificações de Login
     const nomeSalvo = localStorage.getItem('nomeAluno');
     const matriculaSalva = localStorage.getItem('matriculaAluno');
 
     if (!matriculaSalva) {
-      // Se não tem matrícula, volta pro login (Segurança)
       router.push('/login');
       return;
     }
-
     if (nomeSalvo) setNomeAluno(nomeSalvo);
 
-    // 2. Verifica no BANCO DE DADOS se este aluno já votou hoje
-    // Caminho: cantina/2025-11-25/registros/MATRICULA
+    // 2. Verificar Voto
     const verificarVoto = async () => {
       try {
         const dbRef = ref(db);
         const snapshot = await get(child(dbRef, `cantina/${dataIso}/registros/${matriculaSalva}`));
 
         if (snapshot.exists()) {
-          setJaVotou(true); // Bloqueia a votação
-          setPresenca(snapshot.val()); // Recupera o que ele votou (sim ou nao)
+          setJaVotou(true);
+          setPresenca(snapshot.val());
         }
       } catch (error) {
         console.error("Erro ao verificar voto", error);
       }
     };
-
     verificarVoto();
+
+    // 3. BUSCAR O CARDÁPIO DO DIA (A NOVIDADE AQUI!) 🥘
+    const diasDaSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+    const diaHojeIndex = new Date().getDay(); // 0 = Domingo, 1 = Segunda...
+    const diaSlug = diasDaSemana[diaHojeIndex];
+
+    if (diaSlug === 'sabado' || diaSlug === 'domingo') {
+      setPratoDoDia('Bom fim de semana! 😴');
+      setAcompanhamento('Sem aula hoje');
+    } else {
+      // Conecta ao Firebase para ler o dia de hoje
+      const cardapioRef = ref(db, `cardapio_semanal/${diaSlug}`);
+      
+      const unsubscribeCardapio = onValue(cardapioRef, (snapshot) => {
+        if (snapshot.exists()) {
+          const dados = snapshot.val();
+          setPratoDoDia(dados.prato || 'Cardápio não cadastrado');
+          setAcompanhamento(dados.guarnicao || '');
+        } else {
+          setPratoDoDia('A definir pela cozinha');
+          setAcompanhamento('Aguarde novidades');
+        }
+      });
+
+      return () => unsubscribeCardapio();
+    }
+
   }, [dataIso, router]);
 
   const enviarPresenca = async (voto: 'sim' | 'nao') => {
@@ -60,7 +88,6 @@ export default function Dashboard() {
 
     setEnviando(true);
     try {
-      // 1. Atualiza os Contadores (Total Geral)
       const diaRef = ref(db, `cantina/${dataIso}`);
       await runTransaction(diaRef, (dadosAtuais) => {
         if (dadosAtuais === null) {
@@ -73,11 +100,10 @@ export default function Dashboard() {
         return dadosAtuais;
       });
 
-      // 2. Registra que ESTE ALUNO votou (Para bloquear depois)
       await set(ref(db, `cantina/${dataIso}/registros/${matriculaSalva}`), voto);
       
       setPresenca(voto);
-      setJaVotou(true); // Bloqueia imediatamente
+      setJaVotou(true);
 
     } catch (error) {
       console.error(error);
@@ -116,14 +142,20 @@ export default function Dashboard() {
                     </div>
                 </div>
                 
+                {/* 👇 AQUI ESTÁ A PARTE DINÂMICA AGORA 👇 */}
                 <div className="mb-6 pl-2 border-l-4 border-green-500">
-                    <p className="text-gray-600 font-medium">Frango Assado com Batatas Rústicas</p>
+                    <p className="text-gray-800 font-bold text-lg leading-tight">
+                      {pratoDoDia}
+                    </p>
+                    {acompanhamento && (
+                      <p className="text-gray-500 text-sm mt-1">
+                        + {acompanhamento}
+                      </p>
+                    )}
                 </div>
+                {/* 👆 --------------------------------- 👆 */}
 
-                {/* --- ÁREA DE VOTAÇÃO INTELIGENTE --- */}
-                
                 {!jaVotou ? (
-                  // SE AINDA NÃO VOTOU: MOSTRA BOTÕES
                   <>
                     <p className="text-center text-sm text-gray-500 mb-4 font-medium">Você vai almoçar na escola hoje?</p>
                     <div className="grid grid-cols-2 gap-4">
@@ -145,7 +177,6 @@ export default function Dashboard() {
                     </div>
                   </>
                 ) : (
-                  // SE JÁ VOTOU: MOSTRA MENSAGEM DE BLOQUEIO
                   <div className={`p-6 rounded-2xl text-center border-2 ${presenca === 'sim' ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
                     <div className="flex justify-center mb-3">
                       {presenca === 'sim' 
@@ -156,17 +187,11 @@ export default function Dashboard() {
                     <h3 className="text-lg font-bold text-gray-800">
                       {presenca === 'sim' ? 'Almoço Confirmado! ✅' : 'Resposta Registada'}
                     </h3>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Você já respondeu por hoje.
-                    </p>
                     <div className="mt-4 flex items-center justify-center gap-1 text-xs text-gray-400 bg-white/50 py-1 px-3 rounded-full mx-auto w-fit">
                       <LockKeyhole className="w-3 h-3" /> Voto computado
                     </div>
                   </div>
                 )}
-                
-                {/* ---------------------------------- */}
-
              </section>
              
              <section>
